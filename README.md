@@ -56,19 +56,27 @@ Terminal 1 — API:
 python -m backend.main
 ```
 
-Terminal 2 — frontend:
+Terminal 2 — frontend (either command works):
 
 ```bash
 streamlit run frontend/app.py
 ```
 
-Open http://localhost:8501 (localhost only; see `.streamlit/config.toml`). The sidebar shows whether the API is connected.
+Or:
+
+```bash
+python -m frontend.app
+```
+
+Open http://localhost:8501 (localhost only; see `.streamlit/config.toml`). Use the **Chat** tab for multi-turn conversations; history is stored in LangGraph's `MemorySaver` checkpointer by `thread_id`.
 
 ## API
 
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/health` | Health check + configured model |
+| POST | `/api/chat` | Multi-turn chat (`thread_id`, `message`, optional `question_format` on first turn) |
+| GET | `/api/chat/{thread_id}` | Conversation history for a thread |
 | POST | `/api/generate/essay` | Essay-style questions |
 | POST | `/api/generate/short-answer` | Short-answer questions with model answers |
 | POST | `/api/generate/mcq` | Multiple-choice questions |

@@ -5,14 +5,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from backend.agent.graph import generate_questions, get_compiled_graph
+from backend.agent.graph import chat_turn, generate_questions, get_compiled_graph, get_thread_messages
 from backend.config import settings
 
 
 app = FastAPI(
     title="QA AI Agent",
     description="Generate exam questions (essay, short answer, MCQ, true/false) with Gemini",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 app.add_middleware(
@@ -38,6 +38,32 @@ class GenerateResponse(BaseModel):
     format: str
     count: int
     content: str
+
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class ChatRequest(BaseModel):
+    thread_id: str = Field(..., min_length=1, description="Conversation thread id")
+    message: str = Field(..., min_length=1, description="User message")
+    question_format: str | None = Field(
+        default=None,
+        description="Optional format for the first message: essay, short_answer, mcq, true_false",
+    )
+    count: int = Field(default=3, ge=1, le=20, description="Default question count for format prompt")
+
+
+class ChatResponse(BaseModel):
+    thread_id: str
+    reply: str
+    messages: list[ChatMessage]
+
+
+class ThreadHistoryResponse(BaseModel):
+    thread_id: str
+    messages: list[ChatMessage]
 
 
 class HealthResponse(BaseModel):
@@ -76,6 +102,39 @@ def _generate(format_key: str, body: GenerateRequest) -> GenerateResponse:
 @app.get("/api/health", response_model=HealthResponse)
 async def health():
     return HealthResponse(status="ok", model=settings.chat_model)
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat(body: ChatRequest):
+    _require_api_key()
+    get_compiled_graph()
+    try:
+        reply, messages = chat_turn(
+            thread_id=body.thread_id,
+            message=body.message,
+            question_format=body.question_format,
+            count=body.count,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Chat failed: {exc}") from exc
+
+    return ChatResponse(
+        thread_id=body.thread_id,
+        reply=reply,
+        messages=[ChatMessage(**message) for message in messages],
+    )
+
+
+@app.get("/api/chat/{thread_id}", response_model=ThreadHistoryResponse)
+async def chat_history(thread_id: str):
+    get_compiled_graph()
+    messages = get_thread_messages(thread_id)
+    return ThreadHistoryResponse(
+        thread_id=thread_id,
+        messages=[ChatMessage(**message) for message in messages],
+    )
 
 
 @app.post("/api/generate/essay", response_model=GenerateResponse)

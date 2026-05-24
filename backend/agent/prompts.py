@@ -37,9 +37,20 @@ For each item provide:
 
 Output as a numbered list."""
 
+CHAT_SYSTEM = """You are an expert educator helping teachers create exam questions.
+You can produce essay, short-answer, multiple-choice, and true/false items.
+Use the conversation history for context. Follow up on prior requests (e.g. make questions harder, add more, or change format)."""
+
 FORMAT_PROMPTS = {
     "essay": ESSAY_SYSTEM,
     "short_answer": SHORT_ANSWER_SYSTEM,
     "mcq": MCQ_SYSTEM,
     "true_false": TRUE_FALSE_SYSTEM,
+}
+
+FORMAT_LABELS = {
+    "essay": "Essay",
+    "short_answer": "Short answer",
+    "mcq": "Multiple choice (MCQ)",
+    "true_false": "True / False",
 }
