@@ -1,0 +1,17 @@
+fastapi
+python-dotenv
+pydantic-settings
+langgraph
+langchain
+langchain-openai
+langchain-community
+langchain-chroma
+langchain-text-splitters
+langchain-google-genai
+PyMuPDF
+fastapi
+mcp
+langsmith
+langserve
+streamlit
+requests
